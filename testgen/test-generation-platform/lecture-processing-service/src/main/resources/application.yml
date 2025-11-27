@@ -1,0 +1,30 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: lecture-processing-service
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+
+minio:
+  url: http://minio:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: lectures
+
+rabbitmq:
+  exchange: test-generation
+  routing-key: test.queue 
+
+ai:
+  api:
+    key: ODE0ZGMyMjgtYzdkNi00OWQyLWI0ZjAtZjEzMjAyMDczYWRhOjAzZjg3OGMwLWUzZmItNDQzOC1hNjFkLTIzNGRlNGI3NGE3Yw==

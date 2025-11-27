@@ -1,0 +1,235 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+
+  postgres-auth:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+
+  postgres-profiles:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: profiles_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_profiles_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+
+  postgres-lectures:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lectures_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_lectures_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+
+  postgres-tests:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tests_db
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_tests_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+
+  postgres-test-sessions:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_sessions_db
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres_test_sessions_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - microservices-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - microservices-network
+
+  # ollama:
+  #   image: ollama/ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #     - ./ollama.sh:/ollama.sh  # Монтируем скрипт из хоста
+  #   environment:
+  #     - OLLAMA_HOST=0.0.0.0:11434
+  #   networks:
+  #     - microservices-network
+  #   entrypoint: /bin/sh -c "chmod +x /ollama.sh && /ollama.sh"
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - microservices-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+    networks:
+      - microservices-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - eureka-server
+      - postgres-auth
+    networks:
+      - microservices-network
+
+  profile-service:
+    build:
+      context: ./profile-service
+      dockerfile: Dockerfile
+    container_name: profile-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - eureka-server
+      - postgres-profiles
+    networks:
+      - microservices-network
+
+  lecture-service:
+    build:
+      context: ./lecture-service
+      dockerfile: Dockerfile
+    container_name: lecture-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - eureka-server
+      - postgres-lectures
+      - minio
+    networks:
+      - microservices-network
+
+  lecture-processing-service:
+    build:
+      context: ./lecture-processing-service
+      dockerfile: Dockerfile
+    container_name: lecture-processing-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - eureka-server
+      - rabbitmq
+    networks:
+      - microservices-network
+
+  test-service:
+    build:
+      context: ./test-service
+      dockerfile: Dockerfile
+    container_name: test-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - eureka-server
+      - postgres-tests
+      - rabbitmq
+    networks:
+      - microservices-network
+
+  test-session-service:
+    build:
+      context: ./test-session-service
+      dockerfile: Dockerfile
+    container_name: test-session-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      - eureka-server
+      - postgres-test-sessions
+    networks:
+      - microservices-network
+
+volumes:
+  postgres_data:
+  postgres_auth_data:
+  postgres_profiles_data:
+  postgres_lectures_data:
+  postgres_tests_data:
+  postgres_test_sessions_data:
+  minio_data:
+  # ollama_data:
+
+
+networks:
+  microservices-network:
+    driver: bridge 

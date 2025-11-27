@@ -1,0 +1,38 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**
+        - id: profile-service
+          uri: lb://profile-service
+          predicates:
+            - Path=/api/profiles/**
+        - id: lecture-service
+          uri: lb://lecture-service
+          predicates:
+            - Path=/api/lectures/**
+        - id: test-service
+          uri: lb://test-service
+          predicates:
+            - Path=/api/tests/**
+        - id: test-session-service
+          uri: lb://test-session-service
+          predicates:
+            - Path=/api/test-sessions/**
+        - id: lecture-processing-service
+          uri: lb://lecture-processing-service
+          predicates:
+            - Path=/api/process/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/ 
